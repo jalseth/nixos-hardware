@@ -1,4 +1,8 @@
-{ lib, pkgs, ... }: {
+{ lib, pkgs, config, ... }:
+let
+  powerLEDState = if config.framework.disablePowerLED then "off" else "auto";
+in
+{
   imports = [
     ../../../common/pc/laptop
     ../../../common/pc/laptop/ssd
@@ -26,4 +30,23 @@
 
   # Needed for desktop environments to detect/manage display brightness
   hardware.sensor.iio.enable = lib.mkDefault true;
+
+  options = {
+    hardware.framework.disablePowerLED = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Disables the LED around the power button.";
+    };
+  };
+
+  config = {
+    systemd.services.framework-setPowerLED = {
+      enable = true;
+      type = "oneshot";
+      path = [ pkgs.fw-ectool ];
+      serviceConfig = {
+        ExecStart = "ectool led power ${powerLEDState}";
+      };
+    };
+  };
 }
